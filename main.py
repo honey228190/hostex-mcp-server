@@ -1,69 +1,50 @@
 import os
 import requests
-from fastapi import FastAPI, Request, Response
-from mcp.server.fastmcp import FastMCP
+from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
 
-# 1. 初始化 FastMCP 服务
-mcp = FastMCP("Hostex Dynamic Pricing Agent")
+app = FastAPI()
 
 HOSTEX_TOKEN = os.getenv("HOSTEX_TOKEN", "")
 BASE_URL = "https://api.hostex.io"
-
 HEADERS = {
     "Authorization": f"Bearer {HOSTEX_TOKEN}",
     "Content-Type": "application/json"
 }
 
-@mcp.tool()
-def get_room_calendar(room_id: str, start_date: str, end_date: str) -> str:
-    """
-    获取指定房源在某段时间内的日历状态（包括当前挂牌价、已预订/空置状态）。
-    :param room_id: 房源/房型 ID
-    :param start_date: 开始日期 YYYY-MM-DD
-    :param end_date: 结束日期 YYYY-MM-DD
-    """
+# 根路径探活
+@app.get("/")
+def root():
+    return {"status": "running", "service": "Hostex MCP Proxy"}
+
+# 1. 获取房源日历
+@app.post("/get_room_calendar")
+async def get_room_calendar(request: Request):
+    data = await request.json()
+    room_id = data.get("room_id")
+    start_date = data.get("start_date")
+    end_date = data.get("end_date")
+    
     url = f"{BASE_URL}/v1/calendar"
     params = {"room_id": room_id, "start_date": start_date, "end_date": end_date}
     try:
         res = requests.get(url, headers=HEADERS, params=params, timeout=10)
-        if res.status_code == 200:
-            return res.text
-        return f"获取日历失败 ({res.status_code}): {res.text}"
+        return JSONResponse(status_code=res.status_code, content=res.json())
     except Exception as e:
-        return f"请求异常: {str(e)}"
+        return {"error": str(e)}
 
-@mcp.tool()
-def update_hostex_price(room_id: str, date: str, price: float) -> str:
-    """
-    修改 Hostex 系统中指定房源在特定日期的挂牌价格（单位：日元）。
-    :param room_id: 房源/房型 ID
-    :param date: 修改日期的格式 YYYY-MM-DD
-    :param price: 修改后的挂牌价格
-    """
+# 2. 更新房源价格
+@app.post("/update_hostex_price")
+async def update_hostex_price(request: Request):
+    data = await request.json()
+    room_id = data.get("room_id")
+    date = data.get("date")
+    price = data.get("price")
+    
     url = f"{BASE_URL}/v1/calendar/price"
-    payload = {
-        "room_id": str(room_id),
-        "date": date,
-        "price": price
-    }
+    payload = {"room_id": str(room_id), "date": date, "price": price}
     try:
         res = requests.post(url, json=payload, headers=HEADERS, timeout=10)
-        if res.status_code == 200:
-            return f"成功更新房源 {room_id} 在 {date} 的价格为 {price} 日元。"
-        return f"修改失败，Hostex 返回状态码 {res.status_code}: {res.text}"
+        return JSONResponse(status_code=res.status_code, content=res.json())
     except Exception as e:
-        return f"请求异常: {str(e)}"
-
-# 2. 获取 FastMCP 底层的 Starlette/FastAPI 应用
-mcp_app = mcp.sse_app()
-
-# 3. 创建主 FastAPI 实例
-app = FastAPI()
-
-# 响应根路径探测请求
-@app.api_route("/", methods=["GET", "POST", "OPTIONS"])
-async def root_proxy(request: Request):
-    return Response(status_code=200, content="Hostex MCP Server is Running")
-
-# 挂载 FastMCP 原生 SSE 路由
-app.mount("/", mcp_app)
+        return {"error": str(e)}
