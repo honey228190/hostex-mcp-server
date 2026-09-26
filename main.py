@@ -1,9 +1,9 @@
 import os
 import requests
-from mcp.server import MCPServer
+from mcp.server.fastmcp import FastMCP
 
-# 初始化 MCP 2.x 服务
-mcp = MCPServer("Hostex Dynamic Pricing Agent")
+# 初始化 MCP 服务
+mcp = FastMCP("Hostex Dynamic Pricing Agent")
 
 # 从 Render 环境变量读取 Access Token
 HOSTEX_TOKEN = os.getenv("HOSTEX_TOKEN", "")
@@ -55,4 +55,6 @@ def update_hostex_price(room_id: str, date: str, price: float) -> str:
         return f"请求异常: {str(e)}"
 
 if __name__ == "__main__":
-    mcp.run(transport="sse")
+    # 使用 FastMCP 内置的 sse transport 并在 PORT 端口运行
+    port = int(os.getenv("PORT", 8000))
+    mcp.run(transport="sse", host="0.0.0.0", port=port)
