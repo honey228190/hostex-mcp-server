@@ -54,7 +54,5 @@ def update_hostex_price(room_id: str, date: str, price: float) -> str:
     except Exception as e:
         return f"请求异常: {str(e)}"
 
-if __name__ == "__main__":
-    mcp.run(transport="sse")
-
-
+# 暴露 ASGI app 给 uvicorn 方式启动
+app = mcp.sse_app()
