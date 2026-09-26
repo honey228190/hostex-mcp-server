@@ -1,8 +1,9 @@
 import os
 import requests
+from fastapi import FastAPI, Request, Response
 from mcp.server.fastmcp import FastMCP
 
-# 初始化 FastMCP 服务
+# 1. 初始化 FastMCP 服务
 mcp = FastMCP("Hostex Dynamic Pricing Agent")
 
 # 从 Render 环境变量读取 Access Token
@@ -54,5 +55,16 @@ def update_hostex_price(room_id: str, date: str, price: float) -> str:
     except Exception as e:
         return f"请求异常: {str(e)}"
 
-# 暴露 ASGI app 给 uvicorn 方式启动
-app = mcp.sse_app()
+# 2. 获取 FastMCP 底层的 Starlette/FastAPI 应用
+mcp_app = mcp.sse_app()
+
+# 3. 创建主 FastAPI 包装实例，解决 Dify 根路径探测返回 404 的问题
+app = FastAPI()
+
+# 兼容 Dify 对根路径的探测请求，将其路由给 MCP 应用处理
+@app.api_route("/", methods=["GET", "POST", "OPTIONS"])
+async def root_proxy(request: Request):
+    return Response(status_code=200, content="Hostex MCP Server is Running")
+
+# 挂载 FastMCP 所有原生 SSE 路由（/sse, /messages 等）
+app.mount("/", mcp_app)
