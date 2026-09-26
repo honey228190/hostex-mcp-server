@@ -56,4 +56,5 @@ def update_hostex_price(room_id: str, date: str, price: float) -> str:
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8000))
-    mcp.run(transport="sse", host="0.0.0.0", port=port)
+    mcp.run(transport="sse", port=port)
+
