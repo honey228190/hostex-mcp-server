@@ -1,3 +1,4 @@
-mcp
+mcp<2.0.0
 requests
 uvicorn
+sse-starlette
