@@ -1,9 +1,9 @@
 import os
 import requests
-from mcp.server.fastmcp import FastMCP
+from mcp.server import MCPServer
 
-# 初始化 MCP 服务
-mcp = FastMCP("Hostex Dynamic Pricing Agent")
+# 初始化 MCP 2.x 服务
+mcp = MCPServer("Hostex Dynamic Pricing Agent")
 
 # 从 Render 环境变量读取 Access Token
 HOSTEX_TOKEN = os.getenv("HOSTEX_TOKEN", "")
