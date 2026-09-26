@@ -1,5 +1,3 @@
-mcp<2.0.0
 fastapi
 uvicorn
 requests
-sse-starlette
