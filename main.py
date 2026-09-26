@@ -55,6 +55,6 @@ def update_hostex_price(room_id: str, date: str, price: float) -> str:
         return f"请求异常: {str(e)}"
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8000))
     mcp.run(transport="sse")
+
 
